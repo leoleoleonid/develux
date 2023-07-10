@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BitbucketRepository } from './bitbucket.repository';
+import {stringify} from 'node:querystring'
 
 //TODO add HTTPService
 import axios from 'axios';
@@ -32,12 +33,14 @@ export class BitbucketService {
       lastCommit,
     );
     await this.createCommit(
-      newPackageJSON,
-      workspace,
-      repo,
-      accessToken,
-      newBranchName,
+        newPackageJSON,
+        workspace,
+        repo,
+        accessToken,
+        newBranchName,
+        lastCommit
     );
+
     await this.createPR(repo, workspace, accessToken, newBranchName);
     return 'Success!!';
   }
@@ -45,7 +48,7 @@ export class BitbucketService {
   private async createPR(repo, workspace, accessToken, branch) {
     const url = `${BitbucketService.BASE_URL}repositories/${workspace}/${repo}/pullrequests`;
     const body = {
-      title: 'Update deoendencies',
+      title: 'Update dependencies',
       source: {
         branch: {
           name: branch,
@@ -53,14 +56,17 @@ export class BitbucketService {
       },
     };
     const config = {
+      url,
+      method: 'post',
+      maxBodyLength: Infinity,
       headers: {
-        'Content-Type': 'Content-Type: application/json',
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${accessToken}`,
       },
-      data: body,
+      data: JSON.stringify(body),
     };
 
-    const { data } = await axios.post(url, config);
+    const { data } = await axios.request(config);
 
     return data;
   }
@@ -101,28 +107,30 @@ export class BitbucketService {
     repo,
     accessToken,
     branch,
+    lastCommit
   ) {
-    const url = `${BitbucketService.BASE_URL}repositories/${workspace}/${repo}/src`;
-    const queryParams = {
-      branch: encodeURIComponent(branch),
-      message: encodeURIComponent('update deps'),
-      author: encodeURIComponent('dependa bot <leonidkoss1@gmail.com>'),
-    };
-    const config = {
-      params: queryParams,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    };
-    const formData = new FormData();
-    const dataBlob = new Blob([newPackageJSON], { type: 'text/plain' });
-    //TODO fix
-    //@ts-ignore
-    formData.append('package.json', dataBlob, { filename: 'package.json' });
+    let reqData = stringify({
+      'message': 'update deps!',
+      'package.json': newPackageJSON,
+      'author': 'leoleoleonid <leonidkoss1@gmail.com>',
+      'parents': lastCommit,
+      'branch': branch
+    });
 
-    const { data } = await axios.post(url, formData, config);
-    return data;
+    const url = `${BitbucketService.BASE_URL}repositories/${workspace}/${repo}/src`;
+    let config = {
+      method: 'post',
+      maxBodyLength: Infinity,
+      url,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      data : reqData
+    };
+
+    const {data} = await axios.request(config)
+    return data
   }
 
   private async createBranch(repo, workspace, accessToken, commitHash) {
@@ -160,8 +168,7 @@ export class BitbucketService {
       }
     });
 
-    if (Object.keys(dependenciesToUpdate).length > 0)
-      return dependenciesToUpdate;
+    if (Object.keys(dependenciesToUpdate).length > 0) return dependenciesToUpdate;
     return null;
   }
 
