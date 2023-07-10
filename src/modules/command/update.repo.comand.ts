@@ -21,8 +21,11 @@ export class UpdateRepoCommand extends CommandRunner {
 
 
   async run(): Promise<void> {
-    // const {repo, version} = (await this.inquirer.ask<{ repo: string , version: string}>('update-repo-questions', undefined));
-    const res = await this.bitbucketService.updateRepo('updatablerepo', '1.0.0');
-    console.log('!!!!!!!!!', res)
+    const { repo, version } = await this.inquirer.ask<{
+      repo: string;
+      version: string;
+    }>('update-repo-questions', undefined);
+    const res = await this.bitbucketService.updateRepo(repo, version);
+    console.log('DONE:', res);
   }
 }

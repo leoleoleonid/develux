@@ -8,7 +8,10 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "updateDeps": "ts-node ./src/main.ts update",
+    "updateDeps:dev": "ts-node ./src/main.ts update",
+    "updateDeps": "node ./dist/main.js update",
+    "connectRepo:dev": "ts-node ./src/main.ts connect",
+    "connectRepo": "node ./dist/main.js connect",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
