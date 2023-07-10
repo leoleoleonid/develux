@@ -11,7 +11,7 @@ export class BitbucketRepository {
     };
   }
 
-  connectRepo(repo: string,workspace:string, accessToken:string) {
+  connectRepo(repo: string, workspace: string, accessToken: string) {
     //TODO implement, save to db
   }
 }
